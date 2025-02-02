@@ -1,7 +1,15 @@
 function scr_humidity() {
 	if step = 0 {
 		
-	
+	//This first for loop below does a few thing
+	//It creates two reference arrays called "rainboost" and "spread"
+	//"rainboost" increases rain as you get closer to either the equator or +/- 130 latitude (because science)
+	//"spread" is basically how flat each grid cell is, in relation to its neighbors. This determines how much neighboring rain is spread to itself
+	//We also initialize rain levels to be 0 for all months, and calculate the windspeeds based on pressure gradient and terrain shape
+	//humidity_s, humidity_w, rainlevel_s, rainlevel_w are obsolete
+	//humiditymonth and rainlevelmonth are basically the same thing, I need to update the code to get rid of one or the other
+	//but basically, 1 rain is 100 humidity, humidity is capped at 100 max while rain can go above 1
+	//I'll probably get rid of humidity but the main rain sim uses the humidity array so I haven't gotten around to it yet xdd
 	
 	for (var i = 0; i < gridwidth; i++) {
 	    for (var j = 0; j < gridheight; j++) {
@@ -42,6 +50,16 @@ function scr_humidity() {
 			}
 		}
 	}
+
+
+
+
+
+	//Here is the meat of the simulation, where rain is dispersed
+	//We basically spawn a "blob of air" at every 5 cells
+	//Initizalize the starting moisture, temperature, and direction of the blob of air
+	//Then for 40 steps, the blob of air moves in the direction of wind, picking up moisture and depositing rain
+	//Temperature and ocean current temperatures are used to vary how much rain falls at each step
 	
 	for (var j = 0; j < gridheight; j+=5) {
 		for (var i = 0; i < gridwidth; i+=5) {
@@ -98,6 +116,14 @@ function scr_humidity() {
 			
 		}
 	}
+
+
+
+
+	//This section below is a rough estimation of rain that is caused by plant transpiration
+	//The simulation we just did above only accounts for picking moisture from bodies of waters, like the ocean
+	//But in real life, plants can hold on to moisture and contribute to rain
+	//We take the maximum rain amount at each location and use that as a rough approximation of the moisture held by plants....
 	
 	for (var j = 0; j < gridheight; j++) {
 		for (var i = 0; i < gridwidth; i++) {
@@ -107,6 +133,8 @@ function scr_humidity() {
 			}
 		}
 	}
+
+	//....and then we simulate 8 steps of rain from that
 	
 	for (var j = 0; j < gridheight; j+=5) {
 		for (var i = 0; i < gridwidth; i+=5) {
@@ -160,7 +188,9 @@ function scr_humidity() {
 
 	if step = 1 {
 		
-	
+
+	//This here just shapes the rain amount a little, slightly making dryer areas wetter and wetter areas dryer
+
 	for (var i = 0; i < gridwidth; i++) {
 		for (var j = 0; j < gridheight; j++) {
 			for (var m = 0; m < 12; m ++) {
@@ -168,6 +198,12 @@ function scr_humidity() {
 			}
 		}
 	}
+
+
+
+
+	//This makes the change in rain between months more gradual
+	//Just realized that this should loop should be after the next part (the gaussian blur part)
 	
 	for (var i = 0; i < gridwidth; i++) {
 		for (var j = 0; j < gridheight; j++) {
@@ -177,7 +213,11 @@ function scr_humidity() {
 			}
 		}
 	}
-	
+
+
+	//These two loops below does a gaussian blur (radius of 7 cells) on the rain
+	//We reuse the "spread" array here, flatter areas get more blurred, vice-versa for uneven areas
+
 	for (var i = 0; i < gridwidth; i++) {
 		for (var j = 0; j < gridheight; j++) {
 			for (var m = 0; m < 12; m ++) {
@@ -204,7 +244,14 @@ function scr_humidity() {
 		}
 	}
 	
-	
+
+
+	//You can ignore this, it just takes the "humidity" array (which we've been using for the rain simulation", divides by 100 and assigns values to the "rainlevel" array,
+	//and then "humidity" itself is capped to a maximum value of 100 (which isn't even necessary)
+	//none of this is necessary if everything above was done directly to the "rainlevel" array at 1% the amount
+	//so now "humidity" array is only used to determine the rain map color
+	//"rainlevel", since it's not capped, is later used to calculate the real monthly precipitation amounts in "mm"
+
 	for (var i = 0; i < gridwidth; i++) {
 		for (var j = 0; j < gridheight; j++) {
 			//rainlevel_s[i,j] = humidity_s[i,j]/120;
@@ -256,8 +303,22 @@ function scr_humidity() {
 	}
 
 	if step = 2 {   
-		
-	
+
+
+
+	//Here we calculate the actual real values
+	//The real rain amount is determined via rainlevel VS temperature
+	//At the same rainlevel, high termperature = more actual rain
+	//Remember, the "rainlevel" at each cell is just an abstract number that's typically between 0 and 1, with 1 abstractly meaning rainy
+	//PET stands for potential evapotranspiration
+	//Basically how much water evaporates at a given location
+	//Higher temperature and clearer skies equals higher PET
+	//Since we never simulated clouds, a rough approximation based on rain and air pressure is used (low rain + high pressure = clear skies) (This is not super great right now but it'll do)
+	//Aridity is rain divided by PET
+	//When aridity index (AI) = 1, all water from rain is evaporated, no more no less
+	//Higher number means a more lush environment, lower number means more arid
+	//I know semantically it's confusing (higher aridty is less arid?!) but it is the unfortunate convention that scientiests have stuck to
+
 	for (var i = 0; i < gridwidth; i ++) {
 	    for (var j = 0; j < gridheight; j ++) {
 			for (var m = 0; m < 12; m ++) {
@@ -283,6 +344,10 @@ function scr_humidity() {
 	}
 	
 	//Continentality, rain and temp graph
+
+
+	//This just calculates the ranges and values for the nice little dynamic temperature-rain graph thing I made
+
     for (var i = 0; i < gridwidth; i ++) {
 	    for (var j = 0; j < gridheight; j ++) {
 			
